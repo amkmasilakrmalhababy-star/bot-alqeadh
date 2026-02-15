@@ -4,12 +4,14 @@
   "description": "ALQEADH Download Bot",
   "main": "bot.js",
   "scripts": {
-    "start": "node bot.js",
-    "postinstall": "apt-get update && apt-get install -y ffmpeg && pip install yt-dlp"
+    "start": "node bot.js"
+  },
+  "engines": {
+    "node": "18.x"
   },
   "dependencies": {
     "node-telegram-bot-api": "^0.61.0",
-    "axios": "^1.6.0",
+    "axios": "^1.6.7",
     "fs-extra": "^11.2.0"
   }
 }
