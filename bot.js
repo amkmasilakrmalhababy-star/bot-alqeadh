@@ -11,29 +11,33 @@ console.log("💔 ALQEADH Bot is running...");
 
 // رسالة البداية
 bot.onText(/\/start/, (msg) => {
-    bot.sendMessage(msg.chat.id,
+    bot.sendMessage(
+        msg.chat.id,
         "💔 مرحباً بك في بوت تحميل ALQEADH 💔\n\nأرسل رابط يوتيوب لجلب المعلومات."
     );
 });
 
-// عند استقبال رابط
-bot.on('message', async (msg) => {
+// استقبال أي رسالة
+bot.on("message", async (msg) => {
     const chatId = msg.chat.id;
     const text = msg.text;
 
-    if (!text || !ytdl.validateURL(text)) return;
+    if (!text) return;
+    if (!ytdl.validateURL(text)) return;
 
     try {
         const info = await ytdl.getInfo(text);
-        const title = info.videoDetails.title;
-        const views = info.videoDetails.viewCount;
-        const duration = info.videoDetails.lengthSeconds;
-        const thumbnail = info.videoDetails.thumbnails.pop().url;
+        const details = info.videoDetails;
+
+        const title = details.title;
+        const views = details.viewCount;
+        const duration = parseInt(details.lengthSeconds);
+        const thumbnail = details.thumbnails.pop().url;
 
         const minutes = Math.floor(duration / 60);
         const seconds = duration % 60;
 
-        // حذف الرسالة السابقة إن وجدت
+        // حذف الرسالة السابقة
         if (lastMessages[chatId]) {
             try {
                 await bot.deleteMessage(chatId, lastMessages[chatId]);
@@ -43,13 +47,13 @@ bot.on('message', async (msg) => {
         const sent = await bot.sendPhoto(chatId, thumbnail, {
             caption:
                 `🎬 ${title}\n\n` +
-                `⏱ ${minutes}:${seconds < 10 ? "0"+seconds : seconds}\n` +
+                `⏱ ${minutes}:${seconds < 10 ? "0" + seconds : seconds}\n` +
                 `👁 ${views} مشاهدة\n\n` +
                 `💔 عدد القلوب المكسورة: ${brokenHearts}`,
             reply_markup: {
                 inline_keyboard: [
-                    [{ text: "📹 تحميل فيديو", callback_data: "video_" + text }],
-                    [{ text: "🎵 تحميل صوت", callback_data: "audio_" + text }]
+                    [{ text: "📹 تحميل فيديو", callback_data: "video|" + text }],
+                    [{ text: "🎵 تحميل صوت", callback_data: "audio|" + text }]
                 ]
             }
         });
@@ -57,6 +61,7 @@ bot.on('message', async (msg) => {
         lastMessages[chatId] = sent.message_id;
 
     } catch (err) {
+        console.log(err);
         bot.sendMessage(chatId, "❌ حدث خطأ أثناء جلب المعلومات.");
     }
 });
@@ -71,22 +76,39 @@ bot.on("callback_query", async (query) => {
 
     await bot.deleteMessage(chatId, messageId);
 
-    const url = data.split("_")[1];
+    const [type, url] = data.split("|");
 
-    if (data.startsWith("video_")) {
-        bot.sendMessage(chatId, "⬇ جاري تحميل الفيديو... 💔");
+    try {
 
-        const stream = ytdl(url, { quality: '18' });
+        if (type === "video") {
+            await bot.sendMessage(chatId, "⬇ جاري تحميل الفيديو... 💔");
 
-        bot.sendVideo(chatId, stream);
-    }
+            const info = await ytdl.getInfo(url);
 
-    if (data.startsWith("audio_")) {
-        bot.sendMessage(chatId, "⬇ جاري تحميل الصوت... 💔");
+            const format = ytdl.chooseFormat(info.formats, {
+                quality: "highest",
+                filter: "audioandvideo"
+            });
 
-        const stream = ytdl(url, { filter: 'audioonly' });
+            const stream = ytdl(url, { format });
 
-        bot.sendAudio(chatId, stream);
+            await bot.sendVideo(chatId, stream);
+        }
+
+        if (type === "audio") {
+            await bot.sendMessage(chatId, "⬇ جاري تحميل الصوت... 💔");
+
+            const stream = ytdl(url, {
+                quality: "highestaudio",
+                filter: "audioonly"
+            });
+
+            await bot.sendAudio(chatId, stream);
+        }
+
+    } catch (error) {
+        console.log(error);
+        bot.sendMessage(chatId, "❌ فشل التحميل، جرب فيديو آخر.");
     }
 
     bot.answerCallbackQuery(query.id);
