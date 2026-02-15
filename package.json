@@ -1,17 +1,16 @@
 {
   "name": "bot-alqeadh",
   "version": "1.0.0",
-  "description": "ALQEADH Download Bot",
+  "description": "ALQEADH Telegram Downloader Bot",
   "main": "bot.js",
   "scripts": {
     "start": "node bot.js"
   },
-  "engines": {
-    "node": "18.x"
-  },
+  "author": "ALQEADH",
+  "license": "ISC",
   "dependencies": {
-    "node-telegram-bot-api": "^0.61.0",
-    "axios": "^1.6.7",
-    "fs-extra": "^11.2.0"
+    "node-telegram-bot-api": "^0.64.0",
+    "ytdl-core": "^4.11.0",
+    "axios": "^1.6.7"
   }
 }
